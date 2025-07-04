@@ -7,21 +7,29 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include <fstream>
+#include <atomic>
+#include <cmath>
 
 using namespace unitree::robot;
 
 #define TOPIC_LOWSTATE "rt/lowstate"
 #define TOPIC_LOWCMD "rt/lowcmd"
 
+std::atomic<double> last_motor2_dq_state{0.0}; // For thread-safe sharing
+
 void LowStateHandler(const void* msg) {
     const unitree_go::msg::dds_::LowState_& state = *static_cast<const unitree_go::msg::dds_::LowState_*>(msg);
 
     // Print motor 0 state
-    // std::cout << "Motor 0"
-    //           << " q: " << state.motor_state()[0].q()
-    //           << " dq: " << state.motor_state()[0].dq()
-    //           << " tau_est: " << state.motor_state()[0].tau_est()
-    //           << std::endl;
+
+    for (int i = 0; i < 6; ++i) {
+        std::cout << "Motor " << i
+              << " q: " << state.motor_state()[i].q()
+              << " dq: " << state.motor_state()[i].dq()
+              << " tau_est: " << state.motor_state()[i].tau_est()
+              << std::endl;
+    }
 
     // Print IMU data
     std::cout << "IMU Quaternion: [";
@@ -51,11 +59,13 @@ void LowStateHandler(const void* msg) {
         if (i < 2) std::cout << ", ";
     }
     std::cout << "]" << std::endl;
+
+    last_motor2_dq_state = state.motor_state()[2].dq(); // Save dq for motor 2
 }
 
 int main() {
     // Initialize DDS
-    ChannelFactory::Instance()->Init(0, "lo");
+    ChannelFactory::Instance()->Init(1, "lo");
 
     // Publisher for LowCmd
     auto low_cmd_pub = std::make_shared<ChannelPublisher<unitree_go::msg::dds_::LowCmd_>>(TOPIC_LOWCMD);
@@ -65,27 +75,40 @@ int main() {
     auto low_state_sub = std::make_shared<ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(TOPIC_LOWSTATE);
     low_state_sub->InitChannel(LowStateHandler, 1);
 
-    // Publish dummy LowCmd every second
-    while (true) {
+    std::ofstream log("dq_step_log.csv");
+    log << "time,cmd_dq,state_dq\n";
+
+    double step_time = 5.0; // seconds before step
+    double step_value = 3.0;
+    double dt = 0.01; // 10ms loop
+    double t = 0.0;
+
+    while (t < 3.0) { // Run for 15 seconds
         unitree_go::msg::dds_::LowCmd_ cmd;
-        // Fill with dummy data
         auto& motors = cmd.motor_cmd();
-        // motors.resize(6);
         for (size_t i = 0; i < 6; ++i) {
-            // motors[i].q() = 0.0;
             motors[i].dq() = 0.0;
             motors[i].tau() = 0.0;
             motors[i].kp() = 0.0;
             motors[i].kd() = 0.0;
         }
-        motors[0].q() = 0.3;
-        motors[1].q() = -0.3;
-        motors[2].q() = 0.3;
-        motors[3].q() = -0.3;
+
+        // Step input for dq on motor 2
+        // double dq_cmd = (t >= step_time) ? step_value : 0.0;
+        double dq_cmd = 3.0 * std::sin(2.0 * M_PI * t / 0.5);
+        motors[2].dq() = dq_cmd;
+        motors[2].kd() = 0.3;
+
+        // motors[5].kd() = 0.3;
 
         low_cmd_pub->Write(cmd);
-        // std::cout << "[LowCmd] Published dummy command." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        // Log time, command dq, and state dq
+        log << t << "," << dq_cmd << "," << last_motor2_dq_state.load() << "\n";
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(int(dt * 1000)));
+        t += dt;
     }
+    log.close();
     return 0;
 }

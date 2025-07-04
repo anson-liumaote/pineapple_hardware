@@ -8,10 +8,10 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData); // Forwa
 
 int main() {
     // --- DDS/Unitree ChannelFactory initialization ---
-    ChannelFactory::Instance()->Init(0, "lo"); // domain_id=0, interface="lo"
+    ChannelFactory::Instance()->Init(1, "lo"); // domain_id=0, interface="lo"
 
     // --- Serial Motor Controllers ---
-    MotorController controllerLeft("/dev/ttyUSB0", {1, 2});
+    MotorController controllerLeft("/dev/ttyUSB2", {1, 2});
     MotorController controllerRight("/dev/ttyUSB1", {4, 5});
     // controllerLeft.enableReadonlyMode();
     // controllerRight.enableReadonlyMode();

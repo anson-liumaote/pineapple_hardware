@@ -79,9 +79,15 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData)
     if (!device->gotoConfig()) return;
     device->readEmtsAndDeviceConfiguration();
     XsOutputConfigurationArray configArray;
-    configArray.push_back(XsOutputConfiguration(XDI_Quaternion, 100));
-    configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
-    configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
+    configArray.push_back(XsOutputConfiguration(XDI_PacketCounter, 0));
+	configArray.push_back(XsOutputConfiguration(XDI_SampleTimeFine, 0));
+    if (device->deviceId().isVru() || device->deviceId().isAhrs())
+	{
+		configArray.push_back(XsOutputConfiguration(XDI_Quaternion, 100));
+        configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
+        configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
+        configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
+	}
     if (!device->setOutputConfiguration(configArray)) return;
     if (!device->gotoMeasurement()) return;
 

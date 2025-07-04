@@ -177,10 +177,6 @@ void Motor::update(SerialPort& serial) {
     
     // Send command and receive data
     serial.sendRecv(&cmd, &data);
-    double error = data.q - cmd.q; // Calculate error in motor units
-    if (std::abs(error) < 0.01) {
-        std::cout << "Motor " << id << " command executed successfully." << std::endl;
-    }
 }
 
 MotorController::MotorController(const std::string& port, const std::vector<int>& motor_ids, MotorType type)

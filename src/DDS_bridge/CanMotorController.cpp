@@ -122,10 +122,10 @@ void CanMotorController::runLoop(std::atomic<bool>& running) {
         // auto now = clock::now();
         // auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_time).count();
         // if (elapsed >= 1) {
-        //     // printf("CAN loop frequency: %d Hz\n", loop_count);
+        //     printf("CAN loop frequency: %d Hz\n", loop_count);
         //     loop_count = 0;
         //     last_time = now;
         // }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }

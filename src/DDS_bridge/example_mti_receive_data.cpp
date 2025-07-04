@@ -172,6 +172,9 @@ int main(void)
 	}
 	else if (device->deviceId().isVru() || device->deviceId().isAhrs())
 	{
+		configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
+		configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
+		configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
 		configArray.push_back(XsOutputConfiguration(XDI_Quaternion, 100));
 	}
 	else if (device->deviceId().isGnss())

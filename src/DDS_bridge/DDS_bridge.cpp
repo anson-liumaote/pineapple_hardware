@@ -21,19 +21,41 @@ void DDSBridge::LowCmdHandler(const void* msg)
 {
     const unitree_go::msg::dds_::LowCmd_& cmd = *static_cast<const unitree_go::msg::dds_::LowCmd_*>(msg);
 
+    if (cmd.motor_cmd().size() < 5) {
+        std::cerr << "[ERROR] motor cmd size invalid \n";
+        return;
+    }
     // Mapping motor commands
-    if (cmd.motor_cmd().size() > 0)
-        controllerLeft_.setJointCommand(1, cmd.motor_cmd()[0].q(), cmd.motor_cmd()[0].dq(), cmd.motor_cmd()[0].tau(), cmd.motor_cmd()[0].kp(), cmd.motor_cmd()[0].kd());
-    if (cmd.motor_cmd().size() > 1)
-        controllerLeft_.setJointCommand(2, cmd.motor_cmd()[1].q(), cmd.motor_cmd()[1].dq(), cmd.motor_cmd()[1].tau(), cmd.motor_cmd()[1].kp(), cmd.motor_cmd()[1].kd());
-    if (cmd.motor_cmd().size() > 2)
-        controllerRight_.setJointCommand(4, -cmd.motor_cmd()[2].q(), -cmd.motor_cmd()[2].dq(), -cmd.motor_cmd()[2].tau(), cmd.motor_cmd()[2].kp(), cmd.motor_cmd()[2].kd());
-    if (cmd.motor_cmd().size() > 3)
-        controllerRight_.setJointCommand(5, -cmd.motor_cmd()[3].q(), -cmd.motor_cmd()[3].dq(), -cmd.motor_cmd()[3].tau(), cmd.motor_cmd()[3].kp(), cmd.motor_cmd()[3].kd());
-    if (cmd.motor_cmd().size() > 4)
-        canController_.setCommand(2, -cmd.motor_cmd()[4].dq(), -cmd.motor_cmd()[4].tau(), cmd.motor_cmd()[4].kd());
-    if (cmd.motor_cmd().size() > 5)
-        canController_.setCommand(1, cmd.motor_cmd()[5].dq(), cmd.motor_cmd()[5].tau(), cmd.motor_cmd()[5].kd());
+    // std::cout << "Left thigh pos cmd: " << cmd.motor_cmd()[0].q() << " vel cmd: " << cmd.motor_cmd()[0].dq() << " tau: " << cmd.motor_cmd()[0].tau() << std::endl;
+    // std::cout << "Left thigh kp: " << cmd.motor_cmd()[0].kp() << " kd: " <<cmd.motor_cmd()[0].kd() << std::endl;
+    
+    // std::cout << "Left knee pos cmd: " << cmd.motor_cmd()[1].q() << " vel cmd: " << cmd.motor_cmd()[1].dq() << " tau: " << cmd.motor_cmd()[1].tau() << std::endl;
+    // std::cout << "Left knee kp: " << cmd.motor_cmd()[1].kp() << " kd: " <<cmd.motor_cmd()[1].kd() << std::endl;
+    
+    // std::cout << "Left wheel vel cmd: " << cmd.motor_cmd()[2].dq() << " tau: " << cmd.motor_cmd()[2].tau() << std::endl;
+    // std::cout << "Left wheel kp: " << cmd.motor_cmd()[2].kp() << " kd: " <<cmd.motor_cmd()[2].kd() << std::endl;
+
+    // std::cout << "Right thigh pos cmd: " << cmd.motor_cmd()[3].q() << "vel cmd: " << cmd.motor_cmd()[3].dq() << " tau: " << cmd.motor_cmd()[3].tau() << std::endl;
+    // std::cout << "Right thigh kp: " << cmd.motor_cmd()[3].kp() << " kd: " <<cmd.motor_cmd()[3].kd() << std::endl;
+
+    // std::cout << "Right knee pos cmd: " << cmd.motor_cmd()[4].q() << "vel cmd: " << cmd.motor_cmd()[4].dq() << " tau: " << cmd.motor_cmd()[4].tau() << std::endl;
+    // std::cout << "Right knee kp: " << cmd.motor_cmd()[4].kp() << " kd: " <<cmd.motor_cmd()[4].kd() << std::endl;
+    
+    // std::cout << "Right wheel vel cmd: " << cmd.motor_cmd()[5].dq() << "tau: " << cmd.motor_cmd()[5].tau() << std::endl;
+    // std::cout << "Right wheel kp: " << cmd.motor_cmd()[5].kp() << " kd: " <<cmd.motor_cmd()[5].kd() << std::endl;
+    // Left thigh
+    controllerLeft_.setJointCommand(1, cmd.motor_cmd()[0].q(), cmd.motor_cmd()[0].dq(), cmd.motor_cmd()[0].tau(), cmd.motor_cmd()[0].kp(), cmd.motor_cmd()[0].kd());
+    // Left knee
+    controllerLeft_.setJointCommand(2, cmd.motor_cmd()[1].q(), cmd.motor_cmd()[1].dq(), cmd.motor_cmd()[1].tau(), cmd.motor_cmd()[1].kp(), cmd.motor_cmd()[1].kd());
+    // Left wheel
+    canController_.setCommand(2, -cmd.motor_cmd()[2].dq(), -cmd.motor_cmd()[2].tau(), cmd.motor_cmd()[2].kd());
+    // Right thigh
+    controllerRight_.setJointCommand(4, -cmd.motor_cmd()[3].q(), -cmd.motor_cmd()[3].dq(), -cmd.motor_cmd()[3].tau(), cmd.motor_cmd()[3].kp(), cmd.motor_cmd()[3].kd());
+    // Right knee
+    controllerRight_.setJointCommand(5, -cmd.motor_cmd()[4].q(), -cmd.motor_cmd()[4].dq(), -cmd.motor_cmd()[4].tau(), cmd.motor_cmd()[4].kp(), cmd.motor_cmd()[4].kd());
+    // Right wheel
+    canController_.setCommand(1, cmd.motor_cmd()[5].dq(), cmd.motor_cmd()[5].tau(), cmd.motor_cmd()[5].kd());
+
 }
 
 void DDSBridge::PublishLowState()
@@ -60,22 +82,22 @@ void DDSBridge::PublishLowState()
     }
     if (controllerRight_.getMotors().size() > 0) {
         const auto& m = controllerRight_.getMotors()[0];
-        msg.motor_state()[2].q() = -m.getJointPosition();
-        msg.motor_state()[2].dq() = -m.getJointVelocity();
-        msg.motor_state()[2].tau_est() = -m.getJointTorque();
-    }
-    if (controllerRight_.getMotors().size() > 1) {
-        const auto& m = controllerRight_.getMotors()[1];
         msg.motor_state()[3].q() = -m.getJointPosition();
         msg.motor_state()[3].dq() = -m.getJointVelocity();
         msg.motor_state()[3].tau_est() = -m.getJointTorque();
     }
+    if (controllerRight_.getMotors().size() > 1) {
+        const auto& m = controllerRight_.getMotors()[1];
+        msg.motor_state()[4].q() = -m.getJointPosition();
+        msg.motor_state()[4].dq() = -m.getJointVelocity();
+        msg.motor_state()[4].tau_est() = -m.getJointTorque();
+    }
     // CAN motors
     if (canController_.getMotors().size() > 1) {
         const auto& m = canController_.getMotors()[1];
-        msg.motor_state()[4].q() = -m.data.q;
-        msg.motor_state()[4].dq() = -m.data.dq;
-        msg.motor_state()[4].tau_est() = -m.data.tau;
+        msg.motor_state()[2].q() = -m.data.q;
+        msg.motor_state()[2].dq() = -m.data.dq;
+        msg.motor_state()[2].tau_est() = -m.data.tau;
     }
     if (canController_.getMotors().size() > 0) {
         const auto& m = canController_.getMotors()[0];

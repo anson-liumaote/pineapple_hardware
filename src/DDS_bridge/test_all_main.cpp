@@ -8,7 +8,7 @@
 
 int main() {
     // --- Serial Motor Controllers ---
-    MotorController controllerLeft("/dev/ttyUSB0", {1, 2});
+    MotorController controllerLeft("/dev/ttyUSB2", {1, 2});
     MotorController controllerRight("/dev/ttyUSB1", {4, 5});
 
     // Enable readonly mode for safety
@@ -80,13 +80,13 @@ int main() {
         }
 
         // --- Print CAN motor data ---
-        for (const auto& motor : canController.getMotors()) {
-            std::cout << "[CAN] Motor " << motor.id
-                      << " data: q=" << motor.data.q
-                      << ", dq=" << motor.data.dq
-                      << ", tau=" << motor.data.tau
-                      << ", temp=" << motor.data.temp << std::endl;
-        }
+        // for (const auto& motor : canController.getMotors()) {
+        //     std::cout << "[CAN] Motor " << motor.id
+        //               << " data: q=" << motor.data.q
+        //               << ", dq=" << motor.data.dq
+        //               << ", tau=" << motor.data.tau
+        //               << ", temp=" << motor.data.temp << std::endl;
+        // }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
