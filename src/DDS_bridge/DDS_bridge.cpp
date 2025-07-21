@@ -112,7 +112,7 @@ void DDSBridge::PublishLowState()
         for (int i = 0; i < 4; ++i)
             msg.imu_state().quaternion()[i] = imuData_->quaternion[i];
         for (int i = 0; i < 3; ++i) {
-            msg.imu_state().rpy()[i] = imuData_->rpy[i];
+            // msg.imu_state().rpy()[i] = imuData_->rpy[i];
             msg.imu_state().gyroscope()[i] = imuData_->gyro[i];
             msg.imu_state().accelerometer()[i] = imuData_->accel[i];
         }

@@ -11,6 +11,7 @@
 #include <list>
 #include <string>
 #include <atomic>
+#include <chrono>
 
 class CallbackHandler : public XsCallback
 {
@@ -87,13 +88,38 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData)
         configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
         configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
         configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
+        configArray.push_back(XsOutputConfiguration(XDI_RateOfTurnHR, 1000));
+        configArray.push_back(XsOutputConfiguration(XDI_AccelerationHR, 1000));
 	}
     if (!device->setOutputConfiguration(configArray)) return;
     if (!device->gotoMeasurement()) return;
 
+    // Add frequency measurement variables
+    auto lastTime = std::chrono::steady_clock::now();
+    auto lastPrintTime = std::chrono::steady_clock::now();
+    int packetCount = 0;
+    int totalPackets = 0;
+
     while (running) {
         if (callback.packetAvailable()) {
             XsDataPacket packet = callback.getNextPacket();
+            
+            // Count packets for frequency calculation
+            packetCount++;
+            totalPackets++;
+            
+            auto currentTime = std::chrono::steady_clock::now();
+            auto timeSincePrint = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastPrintTime).count();
+            
+            // Print frequency every second
+            if (timeSincePrint >= 1000) {
+                double frequency = packetCount * 1000.0 / timeSincePrint;
+                std::cout << "IMU Loop Frequency: " << std::fixed << std::setprecision(1) 
+                         << frequency << " Hz (Total packets: " << totalPackets << ")" << std::endl;
+                packetCount = 0;
+                lastPrintTime = currentTime;
+            }
+            
             std::lock_guard<std::mutex> lock(imuData->mtx);
             if (packet.containsOrientation()) {
                 XsQuaternion q = packet.orientationQuaternion();
@@ -106,16 +132,20 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData)
                 imuData->rpy[1] = euler.pitch();
                 imuData->rpy[2] = euler.yaw();
             }
-            if (packet.containsCalibratedData()) {
-                XsVector acc = packet.calibratedAcceleration();
-                XsVector gyr = packet.calibratedGyroscopeData();
+            if (packet.containsRateOfTurnHR()) {
+                XsVector gyr_hr = packet.rateOfTurnHR();
                 for (int i = 0; i < 3; ++i) {
-                    imuData->accel[i] = acc[i];
-                    imuData->gyro[i] = gyr[i];
+                    imuData->gyro[i] = gyr_hr[i];
+                }
+            }
+            if (packet.containsAccelerationHR()) {
+                XsVector acc_hr = packet.accelerationHR();
+                for (int i = 0; i < 3; ++i) {
+                    imuData->accel[i] = acc_hr[i];
                 }
             }
         }
-        XsTime::msleep(1);
+        XsTime::msleep(0);
     }
     control->closePort(mtPort.portName().toStdString());
     control->destruct();
