@@ -62,6 +62,8 @@ add_executable(DDS_bridge
     src/DDS_bridge/MotorController.cpp
     src/DDS_bridge/CanMotorController.cpp
     src/DDS_bridge/imu_thread.cpp
+    src/DDS_bridge/imu_can.cpp
+    src/DDS_bridge/imu_rs485.cpp
 )
 target_link_libraries(DDS_bridge
     ${EXTRA_UNITREE_MOTOR_LIB}
@@ -86,3 +88,15 @@ add_executable(example_mti_receive_data
     src/DDS_bridge/example_mti_receive_data.cpp
 )
 target_link_libraries(example_mti_receive_data ${XSENS_OBJ_LIBS})
+
+# add_executable(test_imu
+#     src/DDS_bridge/test_imu.cpp
+#     src/DDS_bridge/imu_rs485.cpp
+# )
+add_executable(test_imu
+    src/DDS_bridge/test_imu.cpp
+    src/DDS_bridge/multi_imu.cpp
+)
+target_link_libraries(test_imu
+    pthread
+)

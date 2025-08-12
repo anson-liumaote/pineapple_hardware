@@ -10,6 +10,7 @@
 #include <unitree/idl/go2/LowState_.hpp>
 #include <memory>
 
+using namespace unitree::common;
 using namespace unitree::robot;
 
 #define TOPIC_LOWSTATE "rt/lowstate"
@@ -18,20 +19,16 @@ using namespace unitree::robot;
 class DDSBridge
 {
 public:
-    DDSBridge(MotorController& left, MotorController& right, CanMotorController& can, ImuSharedData* imuData);
+    DDSBridge(ImuSharedData* imuDataArr[5]);
     ~DDSBridge();
 
     void LowCmdHandler(const void* msg);
     void PublishLowState();
-
     void Run();
 
 private:
-    MotorController& controllerLeft_;
-    MotorController& controllerRight_;
-    CanMotorController& canController_;
-    ImuSharedData* imuData_;
-
+    ImuSharedData* imuDataArr_[5];
+    ThreadPtr lowStatePuberThreadPtr;
     ChannelSubscriberPtr<unitree_go::msg::dds_::LowCmd_> low_cmd_suber_;
     ChannelPublisherPtr<unitree_go::msg::dds_::LowState_> low_state_puber_;
 };
