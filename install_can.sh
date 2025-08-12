@@ -17,3 +17,27 @@ sudo udevadm trigger
 
 echo "*********************************"
 echo "Udev rules applied."
+echo "*********************************"
+
+# Add setserial low_latency to ~/.bashrc if not already present
+BASHRC="$HOME/.bashrc"
+LOW_LATENCY_SNIPPET='
+# Automatically enable low_latency for all ttyUSB devices
+for dev in /dev/ttyUSB*; do
+    if [ -e "$dev" ]; then
+        sudo setserial "$dev" low_latency
+    fi
+done
+'
+
+if ! grep -q "low_latency" "$BASHRC"; then
+    echo "Adding low_latency script to $BASHRC..."
+    echo "$LOW_LATENCY_SNIPPET" >> "$BASHRC"
+else
+    echo "low_latency script already present in $BASHRC, skipping."
+fi
+
+echo "*********************************"
+echo "Done. Please restart your terminal or run:"
+echo "source ~/.bashrc"
+echo "*********************************"
