@@ -88,15 +88,3 @@ add_executable(example_mti_receive_data
     src/DDS_bridge/example_mti_receive_data.cpp
 )
 target_link_libraries(example_mti_receive_data ${XSENS_OBJ_LIBS})
-
-# add_executable(test_imu
-#     src/DDS_bridge/test_imu.cpp
-#     src/DDS_bridge/imu_rs485.cpp
-# )
-add_executable(test_imu
-    src/DDS_bridge/test_imu.cpp
-    src/DDS_bridge/multi_imu.cpp
-)
-target_link_libraries(test_imu
-    pthread
-)

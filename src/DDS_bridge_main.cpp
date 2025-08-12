@@ -34,7 +34,7 @@ int main() {
     ImuSharedData imuData1, imuData2, imuData3, imuData4, imuData5;
     ImuSharedData* imuDataArr[5] = {&imuData1, &imuData2, &imuData3, &imuData4, &imuData5};
     std::thread imu_thread1(imuRS485Thread, std::ref(running), &imuData1, "/dev/ttyUSB0");
-    // std::thread imu_thread2(imuRS485Thread, std::ref(running), &imuData2, "/dev/ttyUSB1");
+    std::thread imu_thread2(imuRS485Thread, std::ref(running), &imuData2, "/dev/ttyUSB1");
     // 依需求新增 thread3~5
 
     // Wait for initial data
@@ -45,15 +45,20 @@ int main() {
     // controllerLeft.initializeMotorAndSetLimits(2, 90.0, 30.0, 20.0, 0.73, -3.25, 10, 3.2);
     // controllerRight.initializeMotorAndSetLimits(4, 90.0, 30.0, 20.0, 1.2, -2.05, 10, 1.48);  // set limit and offset inverse
     // controllerRight.initializeMotorAndSetLimits(5, 90.0, 30.0, 20.0, 3.25, -0.73, 10, -3.2);  // set limit and offset inverse
-    std::cout << "initilization done, waiting for data..." << std::endl;
-    
+    std::cout << "[DDS_Bridge] initialization done, waiting for data..." << std::endl;
+
     // --- DDS Bridge ---
     DDSBridge bridge(imuDataArr);
-    bridge.Run();
+
+    // Keep threads running until you want to stop
+    std::cout << "[DDS_Bridge] Press Enter to stop..." << std::endl;
+    std::cin.get();
 
     running = false;
+    
+    // Clean up threads
     imu_thread1.join();
-    // imu_thread2.join();
+    imu_thread2.join();
     // can_thread.join();
     // threadLeft.join();
     // threadRight.join();

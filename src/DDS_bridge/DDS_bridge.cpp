@@ -13,7 +13,7 @@ DDSBridge::DDSBridge(ImuSharedData* imuDataArr[5])
     low_cmd_suber_->InitChannel(std::bind(&DDSBridge::LowCmdHandler, this, std::placeholders::_1), 1);
     
     lowStatePuberThreadPtr = CreateRecurrentThreadEx("lowstate", UT_CPU_ID_NONE, 2000, &DDSBridge::PublishLowState, this);
-    std::cout << "DDS publisher and subscriber initialized." << std::endl;
+    std::cout << "[DDS_Bridge] DDS publisher and subscriber initialized." << std::endl;
 }
 
 DDSBridge::~DDSBridge() {}
@@ -111,9 +111,9 @@ void DDSBridge::PublishLowState()
     // }
 
     // --- IMU data assignment ---
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 5; ++i) {
         if (imuDataArr_[i]) {
-            // std::lock_guard<std::mutex> lock(imuDataArr_[i]->mtx);
+            std::lock_guard<std::mutex> lock(imuDataArr_[i]->mtx);
             for (int j = 0; j < 4; ++j)
                 msg.imu_state()[i].quaternion()[j] = imuDataArr_[i]->quaternion[j];
             for (int j = 0; j < 3; ++j) {
@@ -138,10 +138,10 @@ void DDSBridge::PublishLowState()
             //     if (j < 2) std::cout << ", ";
             // }
             // std::cout << "]" << std::endl;
-            auto now = std::chrono::steady_clock::now();
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-            std::cout << "[DDSBridge] IMU[" << i << "] data published at " 
-                      << ms << " ms" << std::endl;
+            // auto now = std::chrono::steady_clock::now();
+            // auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+            // std::cout << "[DDSBridge] IMU[" << i << "] data published at " 
+            //           << ms << " ms" << std::endl;
         }
     }
 
@@ -157,16 +157,4 @@ void DDSBridge::PublishLowState()
     //     loop_count = 0;
     //     last_time = now;
     // }
-}
-
-void DDSBridge::Run()
-{
-    // while (true) {
-    //     PublishLowState();
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(2)); // 500Hz
-    // }
-    while (1)
-    {
-        sleep(2);
-    }
 }

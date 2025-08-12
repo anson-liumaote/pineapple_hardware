@@ -40,7 +40,7 @@ std::atomic<double> r_wheel_vel{0.0};
 void LowStateHandler(const void* msg) {
     const unitree_go::msg::dds_::LowState_& state = *static_cast<const unitree_go::msg::dds_::LowState_*>(msg);
     
-    for (int i = 0; i < 1; ++i) { // 印出 IMU[1] 和 IMU[2]
+    for (int i = 0; i < 2; ++i) { // 印出 IMU[1] 和 IMU[2]
         std::cout << "IMU[" << i << "] Gyro: [";
         for (int j = 0; j < 3; ++j) {
             std::cout << state.imu_state()[i].gyroscope()[j];

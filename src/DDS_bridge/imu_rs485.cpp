@@ -16,7 +16,7 @@
 #define FRAME_LENGTH_QUATERNION 23
 #define FRAME_LENGTH_OTHER 19
 
-// CRC16 查表（根據使用說明書）
+// CRC16 check list
 static const uint16_t CRC16_table[256] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7, 0x8108, 0x9129,
     0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,
     0x1231, 0x0210, 0x3273, 0x2252, 0x52B5, 0x4294, 0x72F7, 0x62D6, 0x9339, 0x8318,
@@ -105,26 +105,17 @@ void processIMUFrame(ImuSharedData* imu, const uint8_t* data, size_t length) {
             imu->accel[0] = values[0];
             imu->accel[1] = values[1];
             imu->accel[2] = values[2];
-            std::cout << "[IMU] Accel: " << values[0] << ", " << values[1] << ", " << values[2] << std::endl;
-            auto now = std::chrono::steady_clock::now();
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-            std::cout << "[IMU] data published at " << ms << " ms" << std::endl;
+            // std::cout << "[IMU] Accel: " << values[0] << ", " << values[1] << ", " << values[2] << std::endl;
         } else if (reg_id == 0x02) {
             imu->gyro[0] = values[0];
             imu->gyro[1] = values[1];
             imu->gyro[2] = values[2];
-            std::cout << "[IMU] Gyro: " << values[0] << ", " << values[1] << ", " << values[2] << std::endl;
-            auto now = std::chrono::steady_clock::now();
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-            std::cout << "[IMU] data published at " << ms << " ms" << std::endl;
+            // std::cout << "[IMU] Gyro: " << values[0] << ", " << values[1] << ", " << values[2] << std::endl;
         } else if (reg_id == 0x03) {
             imu->rpy[0] = values[0];
             imu->rpy[1] = values[1];
             imu->rpy[2] = values[2];
-            std::cout << "[IMU] Euler (RPY): " << values[0] << ", " << values[1] << ", " << values[2] << std::endl;
-            auto now = std::chrono::steady_clock::now();
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-            std::cout << "[IMU] data published at " << ms << " ms" << std::endl;
+            // std::cout << "[IMU] Euler (RPY): " << values[0] << ", " << values[1] << ", " << values[2] << std::endl;
         }
     } else if (reg_id == 0x04 && length == FRAME_LENGTH_QUATERNION) {
         float quat[4];
@@ -133,16 +124,13 @@ void processIMUFrame(ImuSharedData* imu, const uint8_t* data, size_t length) {
         std::memcpy(&quat[2], &data[12], 4);
         std::memcpy(&quat[3], &data[16], 4);
 
-        // std::lock_guard<std::mutex> lock(imu->mtx);
+        std::lock_guard<std::mutex> lock(imu->mtx);
         imu->quaternion[0] = quat[0];
         imu->quaternion[1] = quat[1];
         imu->quaternion[2] = quat[2];
         imu->quaternion[3] = quat[3];
 
-        std::cout << "[IMU] Quaternion: " << quat[0] << ", " << quat[1] << ", " << quat[2] << ", " << quat[3] << std::endl;
-        auto now = std::chrono::steady_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-        std::cout << "[IMU] data published at " << ms << " ms" << std::endl;
+        // std::cout << "[IMU] Quaternion: " << quat[0] << ", " << quat[1] << ", " << quat[2] << ", " << quat[3] << std::endl;
     }
 }
 
@@ -150,95 +138,41 @@ void imuRS485Thread(std::atomic<bool>& running, ImuSharedData* imuData, const ch
     int fd = setupSerial(portname);
     if (fd < 0) return;
 
-    // 開啟 IMU 輸出所需的初始化指令
-    // const uint8_t init_cmds[][4] = {
-    //     {0xAA, 0x06, 0x01, 0x0D}, // 進入設定模式
-    //     {0xAA, 0x02, 0x06, 0x0D}, // 設定輸出頻率為1000hz
-    //     {0xAA, 0x01, 0x14, 0x0D}, // 開啟加速度
-    //     {0xAA, 0x01, 0x15, 0x0D}, // 開啟角速度
-    //     {0xAA, 0x01, 0x16, 0x0D}, // 開啟歐拉角
-    //     {0xAA, 0x01, 0x17, 0x0D},  // 開啟四元數
-    //     {0xAA, 0x03, 0x01, 0x0D}, //保存參數
-    //     {0xAA, 0x06, 0x00, 0x0D}, // 退出設定模式
-    // };
-    // for (const auto& cmd : init_cmds) {
-    //     write(fd, cmd, sizeof(cmd));
-    //     usleep(10000); // 10ms 間隔
-    // }
-    // if (fd < 0) return;
-
     std::vector<uint8_t> buffer;
-    // Frequency measurement variables
-    size_t loop_count = 0;
-    auto last_time = std::chrono::steady_clock::now();
 
     while (running) {
         uint8_t byte;
-        // std::cout << "[IMU] waiting for data " << std::endl;
         if (read(fd, &byte, 1) > 0) {
             buffer.push_back(byte);
             auto now = std::chrono::steady_clock::now();
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-            // std::cout << "[IMU] buffer update at " << ms << " ms" << std::endl;
-            std::cout << "[IMU] buffer size: " << buffer.size() << " at " << ms << std::endl;
-            // std::cout << "pass 1: " << static_cast<int>(byte) << std::endl;
 
-            if (buffer.size() >= 5) {
-                if (buffer[0] != FRAME_HEADER || buffer[1] != FRAME_FLAG) {
-                    buffer.clear();
-                    continue;
-                }
-                // std::cout << "pass 2" <<std::endl;
+            if (buffer.size() >= 5 && buffer[0] == FRAME_HEADER && buffer[1] == FRAME_FLAG) {
                 uint8_t can_id = buffer[2]; 
                 uint8_t reg_id = buffer[3];
                 size_t frame_len = (reg_id == 0x04) ? FRAME_LENGTH_QUATERNION : FRAME_LENGTH_OTHER;
 
-                // if (buffer.size() >= frame_len) std::cout << "pass 3-1" <<std::endl;
-                // if (buffer[frame_len - 1] == FRAME_TAIL) std::cout << "pass 3-2" <<std::endl;
-                // else std::cout << static_cast<int>(buffer[frame_len - 1]) <<std::endl;
-
                 if (buffer.size() >= frame_len && buffer[frame_len - 1] == FRAME_TAIL) {
-                    // std::cout << "pass 3" <<std::endl;
                     uint16_t crc_recv = buffer[frame_len - 3] | (buffer[frame_len - 2] << 8);
                     uint16_t crc_calc = Get_CRC16(buffer.data(), frame_len - 3);
                     if (crc_recv == crc_calc) {
-                        // 新增：依照讀到的 can_id 寫入 imuData->id
+                        // write can_id into imuData->id
                         {
-                            // std::lock_guard<std::mutex> lock(imuData->mtx);
+                            std::lock_guard<std::mutex> lock(imuData->mtx);
                             imuData->id = static_cast<int>(can_id);
                         }
-                        processIMUFrame(imuData, buffer.data(), frame_len);
-                        // ++loop_count;
                         // auto now = std::chrono::steady_clock::now();
-                        // auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(now - last_time).count(); 
-                        // std::cout << elapsed << std::endl;
-                        // std::cout << "[IMU] ID: " << static_cast<int>(can_id) << std::endl;
-                        // std::cout << "[IMU: " << portname << "] Loop frequency: " << loop_count / elapsed << " Hz" << std::endl;
-
-                        // if (elapsed >= 1.0) {
-                        //     // std::cout << "[IMU: " << portname << "] Loop frequency: " << loop_count / elapsed << " Hz" << std::endl;
-                        //     loop_count = 0;
-                        //     last_time = now;
-                        // }
+                        // auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+                        // std::cout << "[IMU] buffer size: " << buffer.size() << " at " << ms << std::endl;
+                        processIMUFrame(imuData, buffer.data(), frame_len);
                     }
-                    // std::cout << "[IMU] buffer size 2: " << buffer.size() << std::endl;
                     buffer.clear();
-                    // std::cout << "[IMU] buffer size 3: " << buffer.size() << std::endl;
-                    // std::this_thread::sleep_for(std::chrono::milliseconds(2)); // 0.5 ms
                 }
             } else if (buffer.size() > 128) {
                 buffer.clear();
             }
-            // std::this_thread::sleep_for(std::chrono::microseconds(1));
         }
         
     }
     close(fd);
 }
-
-// 使用範例：
-// std::atomic<bool> running(true);
-// ImuSharedData imuData;
-// std::thread imuThread(imuRS485Thread, std::ref(running), &imuData);
-// ...
-// running = false; imuThread.join();
