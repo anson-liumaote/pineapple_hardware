@@ -37,7 +37,7 @@ void CanMotorController::setCommand(int id, double dq, double tau, double kd) {
 
 bool CanMotorController::sendMotorCurrents() {
     if (motors_.size() < 2 || dev_ < 0) return false;
-    constexpr float torque_const_M3508 = 0.247f;
+    constexpr float torque_const_M3508 = 0.246f;
 
     float motor1_tau = static_cast<float>(
         motors_[0].cmd.kd * (motors_[0].cmd.dq - motors_[0].data.dq) +
@@ -48,11 +48,13 @@ bool CanMotorController::sendMotorCurrents() {
         motors_[1].cmd.tau
     );
 
+    motor1_tau *= 1.2; 
+    motor2_tau *= 1.2; 
     motor1_tau = std::clamp(motor1_tau, -10.0f, 10.0f);
     motor2_tau = std::clamp(motor2_tau, -10.0f, 10.0f);
 
-    float motor1_current = std::clamp(motor1_tau / torque_const_M3508, -10.0f, 10.0f);
-    float motor2_current = std::clamp(motor2_tau / torque_const_M3508, -10.0f, 10.0f);
+    float motor1_current = std::clamp(motor1_tau / torque_const_M3508, -20.0f, 20.0f);
+    float motor2_current = std::clamp(motor2_tau / torque_const_M3508, -20.0f, 20.0f);
 
     int16_t motor1_cmd = static_cast<int16_t>(motor1_current * 16384 / 20);
     int16_t motor2_cmd = static_cast<int16_t>(motor2_current * 16384 / 20);

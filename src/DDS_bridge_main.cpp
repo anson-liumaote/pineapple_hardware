@@ -6,9 +6,17 @@
 
 void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData); // Forward declaration
 
-int main() {
+int main(int argc, const char **argv) {
     // --- DDS/Unitree ChannelFactory initialization ---
-    ChannelFactory::Instance()->Init(1, "lo"); // domain_id=0, interface="lo"
+    if (argc < 2)
+    {
+        ChannelFactory::Instance()->Init(1, "lo");
+    }
+    else
+    {
+        ChannelFactory::Instance()->Init(1, argv[1]);
+    }
+    // ChannelFactory::Instance()->Init(1, "lo"); // domain_id=0, interface="lo"
 
     // --- Serial Motor Controllers ---
     MotorController controllerLeft("/dev/ttyUSB2", {1, 2});
@@ -17,7 +25,7 @@ int main() {
     // controllerRight.enableReadonlyMode();
 
     // --- CAN Motor Controller ---
-    CanMotorController canController("/dev/USB2CAN0", {1, 2});
+    DMCanMotorController canController("/dev/ttyACM0", {1, 2});
 
     // --- Start threads for serial controllers ---
     std::thread threadLeft(&MotorController::runLoop, &controllerLeft);
@@ -31,7 +39,9 @@ int main() {
 
     // --- IMU shared data and thread ---
     ImuSharedData imuData;
-    std::thread imu_thread(imuThreadFunc, std::ref(running), &imuData);
+    std::thread imu_thread([&](){
+        imuThreadFunc(running, &imuData);
+    });
 
     // Wait for initial data
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -41,11 +51,13 @@ int main() {
     controllerLeft.initializeMotorAndSetLimits(2, 90.0, 30.0, 20.0, 0.73, -3.25, 10, 3.2);
     controllerRight.initializeMotorAndSetLimits(4, 90.0, 30.0, 20.0, 1.2, -2.05, 10, 1.48);  // set limit and offset inverse
     controllerRight.initializeMotorAndSetLimits(5, 90.0, 30.0, 20.0, 3.25, -0.73, 10, -3.2);  // set limit and offset inverse
-    std::cout << "initilization done, waiting for data..." << std::endl;
+    std::cout << "[DDS_Bridge] Initilization done, waiting for data..." << std::endl;
     
     // --- DDS Bridge ---
     DDSBridge bridge(controllerLeft, controllerRight, canController, &imuData);
-    bridge.Run();
+    // Keep threads running until you want to stop
+    std::cout << "[DDS_Bridge] Press Ctrl+C to stop..." << std::endl;
+    std::cin.get();
 
     running = false;
     imu_thread.join();

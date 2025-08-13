@@ -43,29 +43,16 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/unitree_robotics/lib/cmake")
 # find_package(mujoco REQUIRED)
 find_package(unitree_sdk2 REQUIRED)
 
-add_executable(test_can
-    src/DDS_bridge/test_can_main.cpp
-    src/DDS_bridge/CanMotorController.cpp
-)
-target_link_libraries(test_can usb_can)
-
-add_executable(test_all_main
-    src/DDS_bridge/test_all_main.cpp
-    src/DDS_bridge/MotorController.cpp
-    src/DDS_bridge/CanMotorController.cpp
-)
-target_link_libraries(test_all_main ${EXTRA_UNITREE_MOTOR_LIB} usb_can pthread)
-
 add_executable(DDS_bridge
     src/DDS_bridge_main.cpp
     src/DDS_bridge/DDS_bridge.cpp
     src/DDS_bridge/MotorController.cpp
-    src/DDS_bridge/CanMotorController.cpp
+    src/DDS_bridge/DMCanMotorController.cpp
     src/DDS_bridge/imu_thread.cpp
 )
 target_link_libraries(DDS_bridge
     ${EXTRA_UNITREE_MOTOR_LIB}
-    usb_can
+    # usb_can
     pthread
     unitree_sdk2
     ${XSENS_OBJ_LIBS}

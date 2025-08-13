@@ -3,7 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-DDSBridge::DDSBridge(MotorController& left, MotorController& right, CanMotorController& can, ImuSharedData* imuData)
+DDSBridge::DDSBridge(MotorController& left, MotorController& right, DMCanMotorController& can, ImuSharedData* imuData)
     : controllerLeft_(left), controllerRight_(right), canController_(can), imuData_(imuData)
 {
     low_state_puber_.reset(new ChannelPublisher<unitree_go::msg::dds_::LowState_>(TOPIC_LOWSTATE));
@@ -12,7 +12,8 @@ DDSBridge::DDSBridge(MotorController& left, MotorController& right, CanMotorCont
     low_cmd_suber_.reset(new ChannelSubscriber<unitree_go::msg::dds_::LowCmd_>(TOPIC_LOWCMD));
     low_cmd_suber_->InitChannel(std::bind(&DDSBridge::LowCmdHandler, this, std::placeholders::_1), 1);
 
-    std::cout << "DDS publisher and subscriber initialized." << std::endl;
+    lowStatePuberThreadPtr = CreateRecurrentThreadEx("lowstate", UT_CPU_ID_NONE, 2000, &DDSBridge::PublishLowState, this);
+    std::cout << "[DDS_Bridge] DDS publisher and subscriber initialized." << std::endl;
 }
 
 DDSBridge::~DDSBridge() {}
@@ -21,28 +22,10 @@ void DDSBridge::LowCmdHandler(const void* msg)
 {
     const unitree_go::msg::dds_::LowCmd_& cmd = *static_cast<const unitree_go::msg::dds_::LowCmd_*>(msg);
 
-    if (cmd.motor_cmd().size() < 5) {
+    if (cmd.motor_cmd().size() < 6) {
         std::cerr << "[ERROR] motor cmd size invalid \n";
         return;
     }
-    // Mapping motor commands
-    // std::cout << "Left thigh pos cmd: " << cmd.motor_cmd()[0].q() << " vel cmd: " << cmd.motor_cmd()[0].dq() << " tau: " << cmd.motor_cmd()[0].tau() << std::endl;
-    // std::cout << "Left thigh kp: " << cmd.motor_cmd()[0].kp() << " kd: " <<cmd.motor_cmd()[0].kd() << std::endl;
-    
-    // std::cout << "Left knee pos cmd: " << cmd.motor_cmd()[1].q() << " vel cmd: " << cmd.motor_cmd()[1].dq() << " tau: " << cmd.motor_cmd()[1].tau() << std::endl;
-    // std::cout << "Left knee kp: " << cmd.motor_cmd()[1].kp() << " kd: " <<cmd.motor_cmd()[1].kd() << std::endl;
-    
-    // std::cout << "Left wheel vel cmd: " << cmd.motor_cmd()[2].dq() << " tau: " << cmd.motor_cmd()[2].tau() << std::endl;
-    // std::cout << "Left wheel kp: " << cmd.motor_cmd()[2].kp() << " kd: " <<cmd.motor_cmd()[2].kd() << std::endl;
-
-    // std::cout << "Right thigh pos cmd: " << cmd.motor_cmd()[3].q() << "vel cmd: " << cmd.motor_cmd()[3].dq() << " tau: " << cmd.motor_cmd()[3].tau() << std::endl;
-    // std::cout << "Right thigh kp: " << cmd.motor_cmd()[3].kp() << " kd: " <<cmd.motor_cmd()[3].kd() << std::endl;
-
-    // std::cout << "Right knee pos cmd: " << cmd.motor_cmd()[4].q() << "vel cmd: " << cmd.motor_cmd()[4].dq() << " tau: " << cmd.motor_cmd()[4].tau() << std::endl;
-    // std::cout << "Right knee kp: " << cmd.motor_cmd()[4].kp() << " kd: " <<cmd.motor_cmd()[4].kd() << std::endl;
-    
-    // std::cout << "Right wheel vel cmd: " << cmd.motor_cmd()[5].dq() << "tau: " << cmd.motor_cmd()[5].tau() << std::endl;
-    // std::cout << "Right wheel kp: " << cmd.motor_cmd()[5].kp() << " kd: " <<cmd.motor_cmd()[5].kd() << std::endl;
     // Left thigh
     controllerLeft_.setJointCommand(1, cmd.motor_cmd()[0].q(), cmd.motor_cmd()[0].dq(), cmd.motor_cmd()[0].tau(), cmd.motor_cmd()[0].kp(), cmd.motor_cmd()[0].kd());
     // Left knee
@@ -119,12 +102,4 @@ void DDSBridge::PublishLowState()
     }
 
     low_state_puber_->Write(msg);
-}
-
-void DDSBridge::Run()
-{
-    while (true) {
-        PublishLowState();
-        std::this_thread::sleep_for(std::chrono::milliseconds(2)); // 500Hz
-    }
 }

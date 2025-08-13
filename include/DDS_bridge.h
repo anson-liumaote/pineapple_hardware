@@ -2,7 +2,7 @@
 #define DDS_BRIDGE_H
 
 #include "MotorController.h"
-#include "CanMotorController.h"
+#include "DMCanMotorController.h"
 #include "ImuSharedData.h"
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
@@ -11,6 +11,7 @@
 #include <memory>
 
 using namespace unitree::robot;
+using namespace unitree::common;
 
 #define TOPIC_LOWSTATE "rt/lowstate"
 #define TOPIC_LOWCMD "rt/lowcmd"
@@ -18,7 +19,7 @@ using namespace unitree::robot;
 class DDSBridge
 {
 public:
-    DDSBridge(MotorController& left, MotorController& right, CanMotorController& can, ImuSharedData* imuData);
+    DDSBridge(MotorController& left, MotorController& right, DMCanMotorController& can, ImuSharedData* imuData);
     ~DDSBridge();
 
     void LowCmdHandler(const void* msg);
@@ -29,8 +30,9 @@ public:
 private:
     MotorController& controllerLeft_;
     MotorController& controllerRight_;
-    CanMotorController& canController_;
+    DMCanMotorController& canController_;
     ImuSharedData* imuData_;
+    ThreadPtr lowStatePuberThreadPtr;
 
     ChannelSubscriberPtr<unitree_go::msg::dds_::LowCmd_> low_cmd_suber_;
     ChannelPublisherPtr<unitree_go::msg::dds_::LowState_> low_state_puber_;
