@@ -1,4 +1,5 @@
 build/
+src/DDS_bridge/plot/
 
 # IDE files
 .vscode/

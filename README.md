@@ -14,7 +14,9 @@ DDS hardware interface for CSL wheel-biped robot
     cd build
     cmake ..
     make
-    ./install_can.sh
+    cd ..
+    sudo chmod +x install_can.sh
+    sudo ./install_can.sh
     ```
 ## Run
 DDS bridge:
@@ -26,12 +28,4 @@ Optioinal:
 - test dds read and write:
     ```
     ./test_sendrecv
-    ```
-- test CAN read and write:
-    ```
-    ./test_can
-    ```
-- test all motors:
-    ```
-    ./test_all
     ```
