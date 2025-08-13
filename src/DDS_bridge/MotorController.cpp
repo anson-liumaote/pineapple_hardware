@@ -17,8 +17,8 @@ Motor::Motor(int motor_id, MotorType type) : id(motor_id), motor_type(type) {
     
     // Set gear ratio based on motor type
     gear_ratio = GearRatio(queryGearRatio(motor_type));
-    
-    std::cout << "Motor " << id << " initialized with type " << (int)motor_type 
+
+    std::cout << "[MotorController] Motor " << id << " initialized with type " << (int)motor_type
               << " and gear ratio " << gear_ratio.ratio << std::endl;
 }
 
@@ -208,6 +208,10 @@ void MotorController::runLoop() {
         for (auto& motor : motors) {
             motor.update(serial);
         }
+        
+        // auto now = std::chrono::steady_clock::now();
+        // auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        // std::cout << "Update Unitree Motor at: " << ms << std::endl;
 
         auto loop_end = std::chrono::steady_clock::now();
         double loop_time = std::chrono::duration<double>(loop_end - loop_start).count();

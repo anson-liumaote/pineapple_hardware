@@ -34,6 +34,12 @@ std::atomic<double> l_wheel_vel{0.0};
 std::atomic<double> r_thigh_pos{0.0}; 
 std::atomic<double> r_calf_pos{0.0};
 std::atomic<double> r_wheel_vel{0.0};
+std::atomic<double> l_thigh_tau{0.0}; 
+std::atomic<double> l_calf_tau{0.0};
+std::atomic<double> l_wheel_tau{0.0};
+std::atomic<double> r_thigh_tau{0.0}; 
+std::atomic<double> r_calf_tau{0.0};
+std::atomic<double> r_wheel_tau{0.0};
 
 
 void LowStateHandler(const void* msg) {
@@ -41,15 +47,15 @@ void LowStateHandler(const void* msg) {
 
     // Print motor 0 state
 
-    // for (int i = 0; i < 6; ++i) {
-    //     if (i==2){
-    //         std::cout << "Motor " << i
-    //             << " q: " << state.motor_state()[i].q()
-    //             << " dq: " << state.motor_state()[i].dq()
-    //             << " tau_est: " << state.motor_state()[i].tau_est()
-    //             << std::endl;
-    //     }
-    // }
+    for (int i = 0; i < 6; ++i) {
+        if (1){
+            std::cout << "Motor " << i
+                << " q: " << state.motor_state()[i].q()
+                << " dq: " << state.motor_state()[i].dq()
+                << " tau_est: " << state.motor_state()[i].tau_est()
+                << std::endl;
+        }
+    }
 
     // Print IMU data
     // std::cout << "IMU Quaternion: [";
@@ -66,12 +72,12 @@ void LowStateHandler(const void* msg) {
     // }
     // std::cout << "]" << std::endl;
 
-    std::cout << "IMU Gyro: [";
-    for (int i = 0; i < 3; ++i) {
-        std::cout << state.imu_state().gyroscope()[i];
-        if (i < 2) std::cout << ", ";
-    }
-    std::cout << "]" << std::endl;
+    // std::cout << "IMU Gyro: [";
+    // for (int i = 0; i < 3; ++i) {
+    //     std::cout << state.imu_state().gyroscope()[i];
+    //     if (i < 2) std::cout << ", ";
+    // }
+    // std::cout << "]" << std::endl;
 
     // std::cout << "IMU Accel: [";
     // for (int i = 0; i < 3; ++i) {
@@ -94,6 +100,12 @@ void LowStateHandler(const void* msg) {
     r_thigh_pos = state.motor_state()[3].q();
     r_calf_pos = state.motor_state()[4].q();
     r_wheel_vel = state.motor_state()[5].dq();
+    l_thigh_tau = state.motor_state()[0].tau_est();
+    l_calf_tau = state.motor_state()[1].tau_est();
+    l_wheel_tau = state.motor_state()[2].tau_est();
+    r_thigh_tau = state.motor_state()[3].tau_est();
+    r_calf_tau = state.motor_state()[4].tau_est();
+    r_wheel_tau = state.motor_state()[5].tau_est();
 
 }
 
@@ -101,7 +113,7 @@ void LowCmdHandler(const void* msg) {
 
     const unitree_go::msg::dds_::LowCmd_& cmd = *static_cast<const unitree_go::msg::dds_::LowCmd_*>(msg);
 
-    if (cmd.motor_cmd().size() < 5) {
+    if (cmd.motor_cmd().size() < 6) {
         std::cerr << "[ERROR] motor cmd size invalid \n";
         return;
     }
@@ -134,15 +146,16 @@ int main() {
     auto low_state_sub = std::make_shared<ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(TOPIC_LOWSTATE);
     low_state_sub->InitChannel(LowStateHandler, 1);
 
-    std::ofstream log("imu_test.csv");
-    log << "time,ang_vel_x,ang_vel_y,ang_vel_z,project_gravity_x,project_gravity_y,project_gravity_z,l_thigh_action,l_calf_action,l_wheel_action,r_thigh_action,r_calf_action,r_wheel_action,l_thigh_pos,l_calf_pos,l_wheel_vel,r_thigh_pos,r_calf_pos,r_wheel_vel" << "\n";
+    std::ofstream log("test.csv");
+    log << "time,ang_vel_x,ang_vel_y,ang_vel_z,project_gravity_x,project_gravity_y,project_gravity_z,l_thigh_action,l_calf_action,l_wheel_action,r_thigh_action,r_calf_action,r_wheel_action,l_thigh_pos,l_calf_pos,l_wheel_vel,r_thigh_pos,r_calf_pos,r_wheel_vel,l_thigh_tau,l_calf_tau,l_wheel_tau,r_thigh_tau,r_calf_tau,r_wheel_tau,l_thigh_tau,l_calf_tau,l_wheel_tau,r_thigh_tau,r_calf_tau,r_wheel_tau" << "\n";
+    // log << "time,l_thigh_cmd,l_calf_cmd,l_wheel_cmd,r_thigh_cmd,r_calf_cmd,r_wheel_cmd,l_thigh_tau,l_calf_tau,l_wheel_tau,r_thigh_tau,r_calf_tau,r_wheel_tau" << "\n";
 
     double step_time = 5.0; // seconds before step
     double step_value = 3.0;
-    double dt = 0.002; // 2ms loop
+    double dt = 0.004; // 2ms loop
     double t = 0.0;
 
-    while (t < 1.0) { // Run for 1 seconds
+    while (t < 10.0) { // Run for 1 seconds
         unitree_go::msg::dds_::LowCmd_ cmd;
         auto& motors = cmd.motor_cmd();
         // for (size_t i = 0; i < 6; ++i) {
@@ -157,15 +170,30 @@ int main() {
         // double amp = 1.5;
         // double freq = 10.0;
         // double dq_cmd = amp * std::sin(2.0 * M_PI * t * freq);
-        motors[2].dq() = -3.0;
-        motors[2].kd() = 1.5;
+        if (t < 0.25) motors[5].tau() = 0.25;
+        else if (t < 0.5) motors[5].tau() = 0.5;
+        else if (t < 0.75) motors[5].tau() = 0.75;
+        else if (t < 1.0) motors[5].tau() = 1.0;
+        else if (t < 1.25) motors[5].tau() = 1.25;
+        else if (t < 1.5) motors[5].tau() = 1.5;
+        else motors[5].tau() = 0.0;
+        // motors[2].kd() = 1.5;
 
         // motors[5].kd() = 0.3;
 
         // low_cmd_pub->Write(cmd);
 
         // Log time, command dq, and state dq
-        log << t << "," << ang_vel_x.load() << "," << ang_vel_y.load() << "," << ang_vel_z.load() << "," << project_gravity_x.load() << "," << project_gravity_y.load() << "," << project_gravity_z.load() << "," << l_thigh_action.load() << "," << l_calf_action.load() <<"," << l_wheel_action.load() <<  "," << r_thigh_action.load() << "," << r_calf_action.load() << "," << r_wheel_action.load() << "," << l_thigh_pos.load() << "," << l_calf_pos.load() << "," << l_wheel_vel.load() << "," << r_thigh_pos.load() << "," << r_calf_pos.load() << "," << r_wheel_vel.load() << "\n";
+        log << t << "," << 
+        ang_vel_x.load() << "," << ang_vel_y.load() << "," << ang_vel_z.load() << "," << 
+        project_gravity_x.load() << "," << project_gravity_y.load() << "," << project_gravity_z.load() << "," << 
+        l_thigh_action.load() << "," << l_calf_action.load() <<"," << l_wheel_action.load() <<  "," << r_thigh_action.load() << "," << r_calf_action.load() << "," << r_wheel_action.load() << "," << 
+        l_thigh_pos.load() << "," << l_calf_pos.load() << "," << l_wheel_vel.load() << "," << r_thigh_pos.load() << "," << r_calf_pos.load() << "," << r_wheel_vel.load() << "," << 
+        l_thigh_tau.load() << "," << l_calf_tau.load() << "," << l_wheel_tau.load() << "," << r_thigh_tau.load() << "," << r_calf_tau.load() << "," << r_wheel_tau.load() << "\n";
+        
+        // log << t << "," << 
+        // l_thigh_action.load() << "," << l_calf_action.load() <<"," << l_wheel_action.load() <<  "," << r_thigh_action.load() << "," << r_calf_action.load() << "," << r_wheel_action.load() << "," <<
+        // l_thigh_tau.load() << "," << l_calf_tau.load() << "," << l_wheel_tau.load() << "," << r_thigh_tau.load() << "," << r_calf_tau.load() << "," << r_wheel_tau.load() << "\n";
 
         std::this_thread::sleep_for(std::chrono::milliseconds(int(dt * 1000)));
         t += dt;

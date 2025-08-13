@@ -45,6 +45,7 @@
 #include <iomanip>
 #include <list>
 #include <string>
+#include <chrono>
 
 Journaller* gJournal = 0;
 
@@ -166,19 +167,24 @@ int main(void)
 
 	if (device->deviceId().isImu())
 	{
+		std::cout<< "Configuring IMU device..." << std::endl;
 		configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
 		configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
 		configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
 	}
 	else if (device->deviceId().isVru() || device->deviceId().isAhrs())
 	{
-		configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
-		configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
-		configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
+		std::cout<< "Configuring VRU/AHRS device..." << std::endl;
+		// configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
+		// configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
+		// configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
 		configArray.push_back(XsOutputConfiguration(XDI_Quaternion, 100));
+        configArray.push_back(XsOutputConfiguration(XDI_RateOfTurnHR, 1000));
+        configArray.push_back(XsOutputConfiguration(XDI_AccelerationHR, 1000));
 	}
 	else if (device->deviceId().isGnss())
 	{
+		std::cout<< "Configuring GNSS device..." << std::endl;
 		configArray.push_back(XsOutputConfiguration(XDI_Quaternion, 100));
 		configArray.push_back(XsOutputConfiguration(XDI_LatLon, 100));
 		configArray.push_back(XsOutputConfiguration(XDI_AltitudeEllipsoid, 100));
@@ -272,8 +278,19 @@ int main(void)
 			}
 			
 			cout << flush;
+			if (packet.containsRateOfTurnHR()) {
+				XsVector gyr_hr = packet.rateOfTurnHR();
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+				auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+				double ms_with_decimal = ms + (ns % 1000000) / 1e6;
+				cout << " |Gyr HR X:" << gyr_hr[0]
+					<< ", Gyr HR Y:" << gyr_hr[1]
+					<< ", Gyr HR Z:" << gyr_hr[2] << endl;
+			}
 		}
-		XsTime::msleep(0);
+		
+		// XsTime::msleep(0);
 	}
 	cout << "\n" << string(79, '-') << "\n";
 	cout << endl;

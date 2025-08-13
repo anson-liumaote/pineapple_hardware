@@ -12,6 +12,7 @@
 #include <string>
 #include <atomic>
 #include <chrono>
+#include <thread>
 
 class CallbackHandler : public XsCallback
 {
@@ -85,9 +86,6 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData)
     if (device->deviceId().isVru() || device->deviceId().isAhrs())
 	{
 		configArray.push_back(XsOutputConfiguration(XDI_Quaternion, 100));
-        configArray.push_back(XsOutputConfiguration(XDI_Acceleration, 100));
-        configArray.push_back(XsOutputConfiguration(XDI_RateOfTurn, 100));
-        configArray.push_back(XsOutputConfiguration(XDI_MagneticField, 100));
         configArray.push_back(XsOutputConfiguration(XDI_RateOfTurnHR, 1000));
         configArray.push_back(XsOutputConfiguration(XDI_AccelerationHR, 1000));
 	}
@@ -101,24 +99,8 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData)
     int totalPackets = 0;
 
     while (running) {
-        if (callback.packetAvailable()) {
+        if (callback.packetAvailable()) {         
             XsDataPacket packet = callback.getNextPacket();
-            
-            // Count packets for frequency calculation
-            packetCount++;
-            totalPackets++;
-            
-            auto currentTime = std::chrono::steady_clock::now();
-            auto timeSincePrint = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastPrintTime).count();
-            
-            // Print frequency every second
-            if (timeSincePrint >= 1000) {
-                double frequency = packetCount * 1000.0 / timeSincePrint;
-                std::cout << "IMU Loop Frequency: " << std::fixed << std::setprecision(1) 
-                         << frequency << " Hz (Total packets: " << totalPackets << ")" << std::endl;
-                packetCount = 0;
-                lastPrintTime = currentTime;
-            }
             
             std::lock_guard<std::mutex> lock(imuData->mtx);
             if (packet.containsOrientation()) {
@@ -145,7 +127,6 @@ void imuThreadFunc(std::atomic<bool>& running, ImuSharedData* imuData)
                 }
             }
         }
-        XsTime::msleep(0);
     }
     control->closePort(mtPort.portName().toStdString());
     control->destruct();
