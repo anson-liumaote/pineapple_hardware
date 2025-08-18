@@ -10,6 +10,14 @@
 #include "DjiMotor.h"
 #include "u2can/SerialPortCAN.h"
 
+#include <unitree/robot/channel/channel_publisher.hpp>
+#include <unitree/robot/channel/channel_subscriber.hpp>
+#include <unitree/idl/go2/LowCmd_.hpp>
+#include <unitree/idl/go2/LowState_.hpp>
+
+using namespace unitree::robot;
+using namespace unitree::common;
+
 class DMCanMotorController {
 public:
     // Construct with device and motor IDs (device_path = serial device, e.g., "/dev/ttyACM0")
@@ -37,4 +45,6 @@ private:
 
     // Serial transport
     std::shared_ptr<SerialPortCAN> serial_;
+
+    ThreadPtr CanMotorControllerThreadPtr;
 };

@@ -33,9 +33,9 @@ int main(int argc, const char **argv) {
 
     // --- Start CAN communication thread ---
     std::atomic<bool> running{true};
-    std::thread can_thread([&](){
-        canController.runLoop(running);
-    });
+    // std::thread can_thread([&](){
+    //     canController.runLoop(running);
+    // });
 
     // --- IMU shared data and thread ---
     ImuSharedData imuData;
@@ -61,7 +61,7 @@ int main(int argc, const char **argv) {
 
     running = false;
     imu_thread.join();
-    can_thread.join();
+    // can_thread.join();
     threadLeft.join();
     threadRight.join();
     return 0;
