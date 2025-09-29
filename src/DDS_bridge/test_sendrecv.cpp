@@ -47,7 +47,7 @@ void LowStateHandler(const void* msg) {
 
     // Print motor 0 state
 
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 8; ++i) {
         if (1){
             std::cout << "Motor " << i
                 << " q: " << state.motor_state()[i].q()
@@ -113,7 +113,7 @@ void LowCmdHandler(const void* msg) {
 
     const unitree_go::msg::dds_::LowCmd_& cmd = *static_cast<const unitree_go::msg::dds_::LowCmd_*>(msg);
 
-    if (cmd.motor_cmd().size() < 6) {
+    if (cmd.motor_cmd().size() < 8) {
         std::cerr << "[ERROR] motor cmd size invalid \n";
         return;
     }

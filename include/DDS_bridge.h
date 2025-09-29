@@ -19,7 +19,7 @@ using namespace unitree::common;
 class DDSBridge
 {
 public:
-    DDSBridge(MotorController& left, MotorController& right, DMCanMotorController& can, ImuSharedData* imuData);
+    DDSBridge(MotorController& hip, MotorController& thigh, MotorController& calf, DMCanMotorController& can, ImuSharedData* imuData);
     ~DDSBridge();
 
     void LowCmdHandler(const void* msg);
@@ -28,8 +28,9 @@ public:
     void Run();
 
 private:
-    MotorController& controllerLeft_;
-    MotorController& controllerRight_;
+    MotorController& controllerHip_;
+    MotorController& controllerThigh_;
+    MotorController& controllerCalf_;
     DMCanMotorController& canController_;
     ImuSharedData* imuData_;
     ThreadPtr lowStatePuberThreadPtr;
