@@ -1,13 +1,9 @@
-# Pineapple Hardware Interface
-DDS hardware interface for CSL wheel-biped robot
-## Overview
-### Hardware
-- Joint motors: Unitree goM8010
-- Wheel motors: DJI M3508
-- IMU: Xsens Mti320
+# Pineapple Multi-IMU Hardware Interface
+Multi-IMU interface for CSL wheel-biped robot
 
-## Build
-1. Follow this repo to install [unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2).
+
+## How to build
+1. Follow this [repo](https://github.com/unitreerobotics/unitree_sdk2) to install unitree_sdk2.
 2. In pineapple_hardware
     ```
     mkdir build
@@ -16,22 +12,25 @@ DDS hardware interface for CSL wheel-biped robot
     make
     ./install_can.sh
     ```
-## Run
+3. Setup serial port
+    ```
+    sudo chmod +x install_can.sh
+    ./install_can.sh
+    source ~/.bashrc
+    ```
+4. Follow this [link](https://gitee.com/kit-miao/dm-imu) to setup and calibrate DM IMU. Please use `RS485` mode.
+
+## How to run
 DDS bridge:
 ```
 sudo ./DDS_bridge
 ```
-
-Optioinal:
+Optional:
 - test dds read and write:
     ```
     ./test_sendrecv
     ```
-- test CAN read and write:
-    ```
-    ./test_can
-    ```
-- test all motors:
-    ```
-    ./test_all
-    ```
+Multi-IMU Python Interfaces (without DDS!!):
+```
+sudo python3 py_multi_imu.py
+```
