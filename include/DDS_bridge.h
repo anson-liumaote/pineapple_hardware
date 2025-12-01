@@ -1,8 +1,6 @@
 #ifndef DDS_BRIDGE_H
 #define DDS_BRIDGE_H
 
-#include "MotorController.h"
-#include "CanMotorController.h"
 #include "ImuSharedData.h"
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
