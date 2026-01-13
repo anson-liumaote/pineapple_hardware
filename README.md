@@ -3,7 +3,7 @@ Multi-IMU interface for CSL wheel-biped robot
 
 
 ## How to build
-1. Follow this [repo](https://github.com/unitreerobotics/unitree_sdk2) to install unitree_sdk2.
+1. Follow [csl_sdk2](https://github.com/anson-liumaote/csl_sdk2.git) to install multi-IMU sdk.
 2. In pineapple_hardware
     ```
     mkdir build
